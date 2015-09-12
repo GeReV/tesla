@@ -1,20 +1,16 @@
-import helpers from './helpers/helpers';
+import domready from 'domready';
+import Tesla from './js/tesla';
 
-/**
- * @class
- * An awesome script
- */
-class Greeter {
-  constructor(name = 'Dear Coder', text = 'hi there') {
-    this.name = name;
-    this.text = text;
-  }
-  get message() {
-    return `${this.text} ${this.name}!`;
-  }
-  set message(text) {
-    this.text = helpers.trim(text);
-  }
-}
+require('file?name=index.html!./index.html');
+require('file?name=css/[name].[ext]!./css/normalize.css');
+require('file?name=css/[name].[ext]!./css/main.css');
 
-export default Greeter;
+domready(() => {
+  const canvas = document.createElement('canvas');
+
+  canvas.id = 'canvas';
+
+  document.body.appendChild(canvas);
+
+  const tesla = new Tesla(canvas);
+});
