@@ -2,7 +2,7 @@
 
 'use strict';
 
-global.library = 'Greeter';
+global.library = 'tesla';
 
 var command = process.argv[2],
     utils   = require('./tasks/_utils'),
