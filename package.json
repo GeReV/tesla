@@ -33,6 +33,7 @@
     "chai": "^3.2.0",
     "chokidar": "^1.0.5",
     "eslint": "^1.2.1",
+    "file-loader": "^0.8.4",
     "karma": "^0.13.9",
     "karma-babel-preprocessor": "^5.2.1",
     "karma-coverage": "^0.5.0",
@@ -50,5 +51,8 @@
   "bugs": {
     "url": "https://github.com/GianlucaGuarini/es6-project-starter-kit/issues"
   },
-  "homepage": "https://github.com/GianlucaGuarini/es6-project-starter-kit"
+  "homepage": "https://github.com/GianlucaGuarini/es6-project-starter-kit",
+  "dependencies": {
+    "domready": "^1.0.8"
+  }
 }
