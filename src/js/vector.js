@@ -27,7 +27,7 @@ export default class Vector {
   normalize() {
     const length = this.length();
 
-    if (length == 0) {
+    if (length === 0) {
       return Vector.zero();
     }
 

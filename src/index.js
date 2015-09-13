@@ -1,4 +1,5 @@
 import domready from 'domready';
+
 import Tesla from './js/tesla';
 
 require('file?name=index.html!./index.html');
@@ -13,4 +14,6 @@ domready(() => {
   document.body.appendChild(canvas);
 
   const tesla = new Tesla(canvas);
+
+  console.log(tesla);
 });

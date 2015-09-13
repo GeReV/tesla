@@ -1,12 +1,12 @@
-import Line from './line.js';
 import Lightning from './lightning.js';
+import HitParticle from './hit_particle.js';
 
 const TAO = Math.PI * 2;
 
-const randomRadius = 40;
-
 export default class Tesla {
   constructor(canvas) {
+    this.lastTime = 0;
+
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
 
@@ -17,40 +17,71 @@ export default class Tesla {
     window.addEventListener('resize', this.resizeCanvas.bind(this), false);
     this.resizeCanvas();
 
-    window.requestAnimationFrame(this.render.bind(this));
+    this.particles = new Array(10);
+
+    this.loop();
   }
 
-  render() {
+  loop(time = 0) {
+    window.requestAnimationFrame(this.loop.bind(this));
+
+    this.render(time - this.lastTime);
+
+    this.lastTime = time;
+  }
+
+  render(dt) {
     const canvas = this.canvas,
           ctx = this.ctx;
 
-    window.requestAnimationFrame(this.render.bind(this));
-
     this.clear(ctx, canvas);
 
-    this.renderBall(ctx, canvas);
+    if (this.mousedown) {
+      this.renderLightning(ctx);
 
-    if (!this.mousedown) {
-      return;
+      this.renderHit();
     }
 
     ctx.save();
+    ctx.globalCompositeOperation = 'screen';
 
-    ctx.strokeStyle = '#fff';
+    this.particles.forEach(p => {
+      p.update(dt);
+      p.render(ctx);
+    });
 
-    const direction = Math.random() * TAO,
-          distance  = Math.random() * randomRadius;
+    ctx.restore();
+
+    this.renderBall(ctx, canvas);
+  }
+
+  renderLightning(ctx) {
+    const canvas = this.canvas;
 
     const lightning = new Lightning(
       canvas.width / 2,
       canvas.height / 2,
-      Math.cos(direction) * distance + this.mouseX,
-      Math.sin(direction) * distance + this.mouseY
+      this.mouseX,
+      this.mouseY
     );
 
     lightning.render(ctx);
+  }
 
-    ctx.restore();
+  renderHit() {
+    this.particleIter = this.particleIter || 0;
+
+    const particle = this.particles[this.particleIter] || new HitParticle(0, 0, 1000);
+
+    if (particle.isDead()) {
+      particle.reset();
+    }
+
+    particle.setPosition(this.mouseX, this.mouseY);
+
+    this.particles[this.particleIter] = particle;
+
+    this.particleIter = (this.particleIter + 1) % this.particles.length;
   }
 
   renderBall(ctx, canvas) {
