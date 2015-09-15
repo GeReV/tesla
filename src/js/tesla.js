@@ -1,4 +1,5 @@
 import Lightning from './lightning.js';
+import ParticleSystem from './particle_system.js';
 import HitParticle from './hit_particle.js';
 
 const TAO = Math.PI * 2;
@@ -14,10 +15,14 @@ export default class Tesla {
     this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this), false);
     this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this), false);
 
+    this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), false);
+    this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this), false);
+    this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), false);
+
     window.addEventListener('resize', this.resizeCanvas.bind(this), false);
     this.resizeCanvas();
 
-    this.particles = new Array(10);
+    this.particles = new ParticleSystem(HitParticle, 1000);
 
     this.loop();
   }
@@ -45,10 +50,8 @@ export default class Tesla {
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
 
-    this.particles.forEach(p => {
-      p.update(dt);
-      p.render(ctx);
-    });
+    this.particles.update(dt);
+    this.particles.render(ctx);
 
     ctx.restore();
 
@@ -69,19 +72,9 @@ export default class Tesla {
   }
 
   renderHit() {
-    this.particleIter = this.particleIter || 0;
-
-    const particle = this.particles[this.particleIter] || new HitParticle(0, 0, 1000);
-
-    if (particle.isDead()) {
-      particle.reset();
-    }
+    const particle = this.particles.getParticle();
 
     particle.setPosition(this.mouseX, this.mouseY);
-
-    this.particles[this.particleIter] = particle;
-
-    this.particleIter = (this.particleIter + 1) % this.particles.length;
   }
 
   renderBall(ctx, canvas) {
@@ -119,6 +112,19 @@ export default class Tesla {
 
   handleMouseMove(e) {
     this.setMousePosition(e);
+  }
+
+  handleTouchStart(e) {
+    this.mousedown = !!e.changedTouches.length;
+  }
+
+  handleTouchEnd(e) {
+    this.mousedown = e.changedTouches.length === 0;
+  }
+
+  handleTouchMove(e) {
+    // TODO: Handle multi-touch.
+    this.setMousePosition(e.changedTouches[0]);
   }
 
   setMousePosition(e) {
