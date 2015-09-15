@@ -66,9 +66,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _jsTesla2 = _interopRequireDefault(_jsTesla);
 
-	__webpack_require__(11);
 	__webpack_require__(12);
 	__webpack_require__(13);
+	__webpack_require__(14);
 
 	(0, _domready2['default'])(function () {
 	  var canvas = document.createElement('canvas');
@@ -138,7 +138,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _lightningJs2 = _interopRequireDefault(_lightningJs);
 
-	var _hit_particleJs = __webpack_require__(9);
+	var _particle_systemJs = __webpack_require__(9);
+
+	var _particle_systemJs2 = _interopRequireDefault(_particle_systemJs);
+
+	var _hit_particleJs = __webpack_require__(10);
 
 	var _hit_particleJs2 = _interopRequireDefault(_hit_particleJs);
 
@@ -157,10 +161,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this), false);
 	    this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this), false);
 
+	    this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), false);
+	    this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this), false);
+	    this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), false);
+
 	    window.addEventListener('resize', this.resizeCanvas.bind(this), false);
 	    this.resizeCanvas();
 
-	    this.particles = new Array(10);
+	    this.particles = new _particle_systemJs2['default'](_hit_particleJs2['default'], 1000);
 
 	    this.loop();
 	  }
@@ -193,10 +201,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      ctx.save();
 	      ctx.globalCompositeOperation = 'screen';
 
-	      this.particles.forEach(function (p) {
-	        p.update(dt);
-	        p.render(ctx);
-	      });
+	      this.particles.update(dt);
+	      this.particles.render(ctx);
 
 	      ctx.restore();
 
@@ -214,19 +220,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'renderHit',
 	    value: function renderHit() {
-	      this.particleIter = this.particleIter || 0;
-
-	      var particle = this.particles[this.particleIter] || new _hit_particleJs2['default'](0, 0, 1000);
-
-	      if (particle.isDead()) {
-	        particle.reset();
-	      }
+	      var particle = this.particles.getParticle();
 
 	      particle.setPosition(this.mouseX, this.mouseY);
-
-	      this.particles[this.particleIter] = particle;
-
-	      this.particleIter = (this.particleIter + 1) % this.particles.length;
 	    }
 	  }, {
 	    key: 'renderBall',
@@ -270,6 +266,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'handleMouseMove',
 	    value: function handleMouseMove(e) {
 	      this.setMousePosition(e);
+	    }
+	  }, {
+	    key: 'handleTouchStart',
+	    value: function handleTouchStart(e) {
+	      this.mousedown = !!e.changedTouches.length;
+	    }
+	  }, {
+	    key: 'handleTouchEnd',
+	    value: function handleTouchEnd(e) {
+	      this.mousedown = e.changedTouches.length === 0;
+	    }
+	  }, {
+	    key: 'handleTouchMove',
+	    value: function handleTouchMove(e) {
+	      // TODO: Handle multi-touch.
+	      this.setMousePosition(e.changedTouches[0]);
 	    }
 	  }, {
 	    key: 'setMousePosition',
@@ -322,7 +334,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var TAO = Math.PI * 2;
 
 	var defaults = {
-	  minSegmentLength: 6,
+	  minSegmentLength: 10,
 	  distanceFalloff: 0.4,
 	  angleConstraint: TAO * 0.4,
 	  lineStartSize: 1.4,
@@ -333,7 +345,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  lineEndOpacity: 0.2,
 	  glowColor: '#d471e8',
 	  glowBlur: 5,
-	  hitRadius: 10
+	  hitRadius: 10,
+	  forkProbability: 0.02,
+	  forkLength: 150
 	};
 
 	var Lightning = (function () {
@@ -353,6 +367,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.points = [line.point1, line.point2];
 
 	    this.points = this.subdivide(this.points, line);
+
+	    this.colorFn = (0, _d3Color.interpolateLab)(this.options.lineStartColor, this.options.lineEndColor);
+	    this.sizeFn = _lerp2['default'].bind(this, this.options.lineStartSize, this.options.lineEndSize);
+	    this.opacityFn = _lerp2['default'].bind(this, this.options.lineStartOpacity, this.options.lineEndOpacity);
+
+	    this.forks = this.createForks();
 	  }
 
 	  _createClass(Lightning, [{
@@ -370,16 +390,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      var pointCount = this.points.length;
 
-	      var colorFn = (0, _d3Color.interpolateLab)(this.options.lineStartColor, this.options.lineEndColor);
-
 	      this.points.slice(1).forEach(function (p, i) {
-	        var t = i / pointCount,
-	            size = (0, _lerp2['default'])(_this.options.lineStartSize, _this.options.lineEndSize, t),
-	            opacity = (0, _lerp2['default'])(_this.options.lineStartOpacity, _this.options.lineEndOpacity, t);
+	        var t = i / pointCount;
 
-	        ctx.globalAlpha = opacity;
-	        ctx.lineWidth = size;
-	        ctx.strokeStyle = colorFn(t);
+	        ctx.globalAlpha = _this.opacityFn(t);
+	        ctx.lineWidth = _this.sizeFn(t);
+	        ctx.strokeStyle = _this.colorFn(t);
 
 	        ctx.lineTo(p.x, p.y);
 
@@ -391,6 +407,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      });
 
 	      ctx.restore();
+
+	      this.forks.forEach(function (l) {
+	        return l.render(ctx);
+	      });
 	    }
 	  }, {
 	    key: 'subdivide',
@@ -404,7 +424,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var center = line.center();
 
 	      var direction = line.direction() + (Math.random() - 0.5) * this.options.angleConstraint,
-	          distance = lineLength * (Math.random() * this.options.distanceFalloff);
+	          distance = lineLength * (0.1 + Math.random() * 0.9) * this.options.distanceFalloff;
 
 	      var offset = new _vectorJs2['default'](Math.cos(direction) * distance, Math.sin(direction) * distance);
 
@@ -413,7 +433,46 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var half1 = this.subdivide(points.slice(0, 2), new _lineJs2['default'](points[0].x, points[0].y, points[1].x, points[1].y));
 	      var half2 = this.subdivide(points.slice(1, 3), new _lineJs2['default'](points[1].x, points[1].y, points[2].x, points[2].y));
 
-	      return half1.concat(half2);
+	      return half1.concat(half2.slice(1)); // half2's first point is the same as half1'x last point, we don't want that duplication.
+	    }
+	  }, {
+	    key: 'createForks',
+	    value: function createForks() {
+	      var _this2 = this;
+
+	      var forks = [];
+
+	      if (this.options.forkProbability === null) {
+	        return forks;
+	      }
+
+	      this.points.slice(1).forEach(function (p, i) {
+	        if (Math.random() > _this2.options.forkProbability) {
+	          return;
+	        }
+
+	        var t = i / _this2.points.length;
+
+	        var currentDirection = _this2.points[i] // i already points to the previous point, no need to subtract.
+	        .subtract(p).direction();
+
+	        var distance = _this2.options.forkLength * 0.2 + Math.random() * _this2.options.forkLength * 0.8,
+	            direction = currentDirection + (Math.random() - 0.5) * _this2.options.angleConstraint;
+
+	        var x2 = p.x + Math.cos(direction) * distance,
+	            y2 = p.y + Math.sin(direction) * distance;
+
+	        forks.push(new Lightning(p.x, p.y, x2, y2, {
+	          lineStartSize: _this2.sizeFn(t),
+	          lineStartColor: _this2.colorFn(t),
+	          lineStartOpacity: _this2.opacityFn(t),
+	          lineEndSize: 0,
+	          glowBlur: _this2.options.glowBlur * 0.8,
+	          forkProbability: null
+	        }));
+	      });
+
+	      return forks;
 	    }
 	  }]);
 
@@ -1370,6 +1429,73 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 9 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var ParticleSystem = (function () {
+	  function ParticleSystem(clazz) {
+	    var lifespan = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+
+	    _classCallCheck(this, ParticleSystem);
+
+	    this.ParticleClass = clazz;
+
+	    this.particles = [];
+	    this.deadPool = [];
+
+	    this.particleLifespan = lifespan;
+	  }
+
+	  _createClass(ParticleSystem, [{
+	    key: "getParticle",
+	    value: function getParticle() {
+	      var particle = this.deadPool.length ? this.deadPool.shift() : new this.ParticleClass(0, 0, this.particleLifespan);
+
+	      particle.reset();
+
+	      this.particles.push(particle);
+
+	      return particle;
+	    }
+	  }, {
+	    key: "update",
+	    value: function update(dt) {
+	      this.particles.forEach(function (p) {
+	        return p.update(dt);
+	      });
+
+	      while (this.particles.length && this.particles[0].isDead()) {
+	        var deadParticle = this.particles.shift();
+
+	        this.deadPool.push(deadParticle);
+	      }
+	    }
+	  }, {
+	    key: "render",
+	    value: function render(ctx) {
+	      this.particles.forEach(function (p) {
+	        return p.render(ctx);
+	      });
+	    }
+	  }]);
+
+	  return ParticleSystem;
+	})();
+
+	exports["default"] = ParticleSystem;
+	module.exports = exports["default"];
+
+/***/ },
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1388,7 +1514,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var _particleJs = __webpack_require__(10);
+	var _particleJs = __webpack_require__(11);
 
 	var _particleJs2 = _interopRequireDefault(_particleJs);
 
@@ -1433,7 +1559,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = exports['default'];
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1518,19 +1644,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = exports['default'];
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "index.html"
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "css/normalize.css"
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "css/main.css"
