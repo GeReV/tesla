@@ -66,9 +66,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _jsTesla2 = _interopRequireDefault(_jsTesla);
 
-	__webpack_require__(11);
 	__webpack_require__(12);
 	__webpack_require__(13);
+	__webpack_require__(14);
 
 	(0, _domready2['default'])(function () {
 	  var canvas = document.createElement('canvas');
@@ -138,7 +138,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _lightningJs2 = _interopRequireDefault(_lightningJs);
 
-	var _hit_particleJs = __webpack_require__(9);
+	var _particle_systemJs = __webpack_require__(9);
+
+	var _particle_systemJs2 = _interopRequireDefault(_particle_systemJs);
+
+	var _hit_particleJs = __webpack_require__(10);
 
 	var _hit_particleJs2 = _interopRequireDefault(_hit_particleJs);
 
@@ -157,10 +161,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this), false);
 	    this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this), false);
 
+	    this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), false);
+	    this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this), false);
+	    this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), false);
+
 	    window.addEventListener('resize', this.resizeCanvas.bind(this), false);
 	    this.resizeCanvas();
 
-	    this.particles = new Array(10);
+	    this.particles = new _particle_systemJs2['default'](_hit_particleJs2['default'], 1000);
 
 	    this.loop();
 	  }
@@ -193,10 +201,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      ctx.save();
 	      ctx.globalCompositeOperation = 'screen';
 
-	      this.particles.forEach(function (p) {
-	        p.update(dt);
-	        p.render(ctx);
-	      });
+	      this.particles.update(dt);
+	      this.particles.render(ctx);
 
 	      ctx.restore();
 
@@ -214,19 +220,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'renderHit',
 	    value: function renderHit() {
-	      this.particleIter = this.particleIter || 0;
-
-	      var particle = this.particles[this.particleIter] || new _hit_particleJs2['default'](0, 0, 1000);
-
-	      if (particle.isDead()) {
-	        particle.reset();
-	      }
+	      var particle = this.particles.getParticle();
 
 	      particle.setPosition(this.mouseX, this.mouseY);
-
-	      this.particles[this.particleIter] = particle;
-
-	      this.particleIter = (this.particleIter + 1) % this.particles.length;
 	    }
 	  }, {
 	    key: 'renderBall',
@@ -270,6 +266,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'handleMouseMove',
 	    value: function handleMouseMove(e) {
 	      this.setMousePosition(e);
+	    }
+	  }, {
+	    key: 'handleTouchStart',
+	    value: function handleTouchStart(e) {
+	      this.mousedown = !!e.changedTouches.length;
+	    }
+	  }, {
+	    key: 'handleTouchEnd',
+	    value: function handleTouchEnd(e) {
+	      this.mousedown = e.changedTouches.length === 0;
+	    }
+	  }, {
+	    key: 'handleTouchMove',
+	    value: function handleTouchMove(e) {
+	      // TODO: Handle multi-touch.
+	      this.setMousePosition(e.changedTouches[0]);
 	    }
 	  }, {
 	    key: 'setMousePosition',
@@ -1370,6 +1382,73 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 9 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var ParticleSystem = (function () {
+	  function ParticleSystem(clazz) {
+	    var lifespan = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
+
+	    _classCallCheck(this, ParticleSystem);
+
+	    this.ParticleClass = clazz;
+
+	    this.particles = [];
+	    this.deadPool = [];
+
+	    this.particleLifespan = lifespan;
+	  }
+
+	  _createClass(ParticleSystem, [{
+	    key: "getParticle",
+	    value: function getParticle() {
+	      var particle = this.deadPool.length ? this.deadPool.shift() : new this.ParticleClass(0, 0, this.particleLifespan);
+
+	      particle.reset();
+
+	      this.particles.push(particle);
+
+	      return particle;
+	    }
+	  }, {
+	    key: "update",
+	    value: function update(dt) {
+	      this.particles.forEach(function (p) {
+	        return p.update(dt);
+	      });
+
+	      while (this.particles.length && this.particles[0].isDead()) {
+	        var deadParticle = this.particles.shift();
+
+	        this.deadPool.push(deadParticle);
+	      }
+	    }
+	  }, {
+	    key: "render",
+	    value: function render(ctx) {
+	      this.particles.forEach(function (p) {
+	        return p.render(ctx);
+	      });
+	    }
+	  }]);
+
+	  return ParticleSystem;
+	})();
+
+	exports["default"] = ParticleSystem;
+	module.exports = exports["default"];
+
+/***/ },
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1388,7 +1467,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var _particleJs = __webpack_require__(10);
+	var _particleJs = __webpack_require__(11);
 
 	var _particleJs2 = _interopRequireDefault(_particleJs);
 
@@ -1433,7 +1512,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = exports['default'];
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1518,19 +1597,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = exports['default'];
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "index.html"
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "css/normalize.css"
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = __webpack_require__.p + "css/main.css"
