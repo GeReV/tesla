@@ -222,7 +222,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function renderHit() {
 	      var particle = this.particles.getParticle();
 
-	      particle.setPosition(this.mouseX, this.mouseY);
+	      var x = this.mouseX + (Math.random() - 0.5) * 10,
+	          y = this.mouseY + (Math.random() - 0.5) * 10;
+
+	      particle.setPosition(x, y);
+	      particle.setRadius(10 + Math.random() * 5);
 	    }
 	  }, {
 	    key: 'renderBall',
@@ -1523,10 +1527,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	var HitParticle = (function (_Particle) {
 	  _inherits(HitParticle, _Particle);
 
-	  function HitParticle() {
+	  function HitParticle(x, y, lifespan) {
 	    _classCallCheck(this, HitParticle);
 
-	    _get(Object.getPrototypeOf(HitParticle.prototype), 'constructor', this).apply(this, arguments);
+	    _get(Object.getPrototypeOf(HitParticle.prototype), 'constructor', this).call(this, x, y, lifespan);
+
+	    this.setRadius(radius);
 	  }
 
 	  _createClass(HitParticle, [{
@@ -1536,7 +1542,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return;
 	      }
 
-	      var gradient = ctx.createRadialGradient(this.position.x, this.position.y, radius, this.position.x, this.position.y, 0);
+	      var gradient = ctx.createRadialGradient(this.position.x, this.position.y, this.radius, this.position.x, this.position.y, 0);
 
 	      gradient.addColorStop(0, 'transparent');
 	      gradient.addColorStop(1, '#bbbaff');
@@ -1546,9 +1552,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	      ctx.globalAlpha = (this.lifespan - this.age) / this.lifespan;
 
 	      ctx.fillStyle = gradient;
-	      ctx.fillRect(this.position.x - radius, this.position.y - radius, this.position.x + radius, this.position.y + radius);
+	      ctx.fillRect(this.position.x - this.radius, this.position.y - this.radius, this.position.x + this.radius, this.position.y + this.radius);
 
 	      ctx.restore();
+	    }
+	  }, {
+	    key: 'setRadius',
+	    value: function setRadius(r) {
+	      this.radius = r;
 	    }
 	  }]);
 
