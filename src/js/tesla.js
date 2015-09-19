@@ -74,7 +74,11 @@ export default class Tesla {
   renderHit() {
     const particle = this.particles.getParticle();
 
-    particle.setPosition(this.mouseX, this.mouseY);
+    const x = this.mouseX + (Math.random() - 0.5) * 10,
+          y = this.mouseY + (Math.random() - 0.5) * 10;
+
+    particle.setPosition(x, y);
+    particle.setRadius(10 + Math.random() * 5);
   }
 
   renderBall(ctx, canvas) {
